@@ -4,7 +4,7 @@
 #include <netdb.h>
 #include <unistd.h>
 
-#define PORT 2828
+#define PORT 24242
 
 #define MIN_ARGS 2
 #define MAX_ARGS 2
@@ -28,16 +28,29 @@ void validate_arguments(int argc, char *argv[])
 
 void send_request(int fd)
 {
+   FILE *network = fdopen(fd, "r+");
    char *line = NULL;
    size_t size;
    ssize_t num;
 
-   while ((num = getline(&line, &size, stdin)) >= 0)
-   {
-      write(fd, line, num);
+   if (network == NULL){
+	perror("fdopen");
+	return;
    }
 
+   printf("Enter message: ");
+   while ((num = getline(&line, &size, stdin)) != -1){
+	fprintf(network, "%s", line);
+	fflush(network);
+	if (getline(&line, &size, network) >= 0){
+		printf("Server echoed: %s", line);
+		fflush(stdout);
+	}
+	printf("Enter message: ");
+	
+   }
    free(line);
+   fclose(network);
 }
 
 int connect_to_server(struct hostent *host_entry)
